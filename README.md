@@ -1,3 +1,5 @@
+### https://github.com/vikasverma1077/manifold_mixup
+
 # Manifold_mixup (ICML 2019)
 This repo consists Pytorch code for the ICML 2019 paper Manifold Mixup: Better Representations by Interpolating Hidden States (https://arxiv.org/abs/1806.05236 ICML version (http://proceedings.mlr.press/v97/verma19a.html))
 
