@@ -54,7 +54,7 @@ parser.add_argument('--arch', metavar='ARCH', default='resnext29_8_64', choices=
 parser.add_argument('--initial_channels', type=int, default=64, choices=(16,64))
 # Optimization options
 parser.add_argument('--epochs', type=int, default=300, help='Number of epochs to train.')
-parser.add_argument('--train', type=str, default = 'vanilla', choices =['vanilla','mixup', 'mixup_hidden','cutout', 'MyMixup'])
+parser.add_argument('--train', type=str, default = 'vanilla', choices =['vanilla','mixup', 'mixup_hidden','cutout', 'MyMixup', 'MixMethod'])
 parser.add_argument('--mixup_alpha', type=float, default=0.0, help='alpha parameter for mixup')
 parser.add_argument('--cutout', type=int, default=16, help='size of cut out')
 
@@ -82,7 +82,7 @@ parser.add_argument('--workers', type=int, default=2, help='number of data loadi
 parser.add_argument('--manualSeed', type=int, help='manual seed')
 parser.add_argument('--add_name', type=str, default='')
 parser.add_argument('--job_id', type=str, default='')
-parser.add_argument('--MyMixup_num_layer', type= int, default=3, choices = [1,2,3,4])
+parser.add_argument('--MyMixup_num_layer', type= int, default=None, choices = [None, 1,2,3,4])
 parser.add_argument('--Model_path', type= str)
 parser.add_argument('--validate_mix',action='store_true', default=False)
 
@@ -495,41 +495,26 @@ def main():
     test_loss=[]
     test_acc=[]
 
+
 #     if args.train == 'MyMixup':
-#         if args.MyMixup_num_layer <=3:
-#             net.layer4.requires_grad = False
-#             net.linear.requires_grad = False
-#         if args.MyMixup_num_layer <=2:
-#             net.layer3.requires_grad = False
-#         if args.MyMixup_num_layer <=1:
-#             net.layer2.requires_grad = False    
-    if args.train == 'MyMixup':
+#         for i, child in enumerate(net.children()):
+#             if i > args.MyMixup_num_layer:
+#                 for param in child.parameters():
+#                     param.requires_grad = False
+
+    
+    Mix_Method = False
+    if args.train== 'MixMethod':
+        assert args.MyMixup_num_layer is not None, "Please write args.MyMixup_num_layer"
+        Mix_Method = True
+        args.train = 'mixup_hidden'
+    for i, epoch in enumerate(range(args.start_epoch, args.epochs)):        
         for i, child in enumerate(net.children()):
             if i > args.MyMixup_num_layer:
                 for param in child.parameters():
-                    param.requires_grad = False
-
-                
-#         if args.MyMixup_num_layer <=3:
-#             for param in net.layer4():
-#                 param.requires_grad = False
-#             for param in net.linear():
-#                 param.requires_grad = False
-#         if args.MyMixup_num_layer <=2:
-#             for param in net.layer3():
-#                 param.requires_grad = False
-#         if args.MyMixup_num_layer <=1:
-#             for param in net.layer2():
-#                 param.requires_grad = False
-#             for param in net.layer1():
-#                 param.requires_grad = False
-#             for param in net.conv1():
-#                 param.requires_grad = False
-#             print("ALL FREZZE" + "=" * 90)
-
-    
-    for i, epoch in enumerate(range(args.start_epoch, args.epochs)):
-    
+                    param.requires_grad = not args.train == 'MyMixup'
+                print(f"======================{i} layer requires_grad is {not args.train == 'MyMixup'}=======================")
+        
         if i %5 == 0:
             val_acc, val_los   = validate(test_loader, net, log, args)
     
@@ -592,7 +577,12 @@ def main():
                    
         pickle.dump(train_log, open( os.path.join(exp_dir,'log.pkl'), 'wb'))
         plotting(exp_dir)
-    
+        if Mix_Method:
+            if args.train == 'mixup_hidden':
+                args.train = 'MyMixup'
+            else:
+                args.train = 'mixup_hidden'
+        print(f"====================================================={args.train}=====================================================")
     log.close()
 # -
 
