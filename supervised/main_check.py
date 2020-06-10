@@ -84,6 +84,7 @@ parser.add_argument('--add_name', type=str, default='')
 parser.add_argument('--job_id', type=str, default='')
 parser.add_argument('--MyMixup_num_layer', type= int, default=None, choices = [None, 1,2,3,4])
 parser.add_argument('--Model_path', type= str)
+parser.add_argument('--MyMixupAlpha', type=float, default = 0.9)
 parser.add_argument('--validate_mix',action='store_true', default=False)
 
 # -
@@ -125,7 +126,8 @@ def experiment_name_non_mnist(dataset='cifar10',
                     train = 'vanilla',
                     mixup_alpha=0.0,
                     job_id=None,
-                    add_name=''):
+                    add_name='',
+                    freeze_layer_num= 1):
     exp_name = dataset
     exp_name += '_arch_'+str(arch)
     exp_name += '_train_'+str(train)
@@ -140,6 +142,7 @@ def experiment_name_non_mnist(dataset='cifar10',
     exp_name += '_mom_'+str(momentum)
     exp_name +='_decay_'+str(decay)
     exp_name += '_data_aug_'+str(data_aug)
+    exp_name += '_FreezeLayerNum' +str(freeze_layer_num)
     if job_id!=None:
         exp_name += '_job_id_'+str(job_id)
     if add_name!='':
@@ -286,7 +289,8 @@ def train(train_loader, model, optimizer, epoch, args, log):
 #             print("=" * 100 + "out")
 #             print(out.requires_grad)
             
-            loss = bce_loss(softmax(mixup_out), out) #mixup_criterion(target_a, target_b, lam) 
+            loss = mse_loss(softmax(mixup_out), out) #mixup_criterion(target_a, target_b, lam) 
+            loss*= args.MyMixupAlpha
 #            loss /= 10
 #            assert False,"STOP@@@@@@@@@@@@@@@@@"
 
